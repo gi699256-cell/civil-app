@@ -1,3 +1,9 @@
+Lee님, 아까 복사하실 때 첫 줄이 조금 겹친 것 같아요! 그대로 붙여넣으셔도 되지만, 더 확실하게 작동하도록 제가 줄 바꿈을 깔끔하게 정리해 드릴게요.
+
+아래 상자 안에 있는 내용을 전부 복사해서 app.py에 붙여넣으시면 됩니다.
+
+💻 app.py에 넣을 최종 코드 (정리된 버전)
+Python
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
