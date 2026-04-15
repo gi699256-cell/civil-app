@@ -3,51 +3,60 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import platform
 
-# 한글 폰트 설정 (Streamlit Cloud 환경 대응)
-system_os = platform.system()
-if system_os == "Windows":
-    plt.rc('font', family='Malgun Gothic')
-elif system_os == "Darwin":
-    plt.rc('font', family='AppleGothic')
-else:
-    plt.rc('font', family='NanumGothic')
-plt.rc('axes', unicode_minus=False)
+# 폰트 설정 (더 확실하게!)
+def set_korean_font():
+    system_os = platform.system()
+    if system_os == "Windows":
+        plt.rc('font', family='Malgun Gothic')
+    elif system_os == "Darwin":
+        plt.rc('font', family='AppleGothic')
+    else:
+        plt.rc('font', family='NanumGothic')
+    plt.rc('axes', unicode_minus=False)
 
-st.title("📊 민원 데이터 분석 통합 도구")
-st.write("막대, 파이 차트에 이어 **꺾은선 그래프** 기능이 추가되었습니다!")
+set_korean_font()
 
-uploaded_file = st.file_uploader("엑셀 파일을 업로드하세요", type=["xlsx", "xls"])
+st.set_page_config(page_title="깔끔한 민원 분석기", layout="wide")
+st.title("✨ 깔끔한 민원 데이터 분석 도구")
+
+uploaded_file = st.file_uploader("분석할 엑셀 파일을 올려주세요", type=["xlsx", "xls"])
 
 if uploaded_file is not None:
     df = pd.read_excel(uploaded_file)
-    st.write("### 📋 데이터 미리보기", df.head())
-
-    columns = df.columns.tolist()
-    target_column = st.sidebar.selectbox("분석할 컬럼을 선택하세요", columns)
+    
+    # 1. 데이터 정리: 컬럼명에 공백이 있으면 제거
+    df.columns = [str(c).strip() for c in df.columns]
+    
+    st.sidebar.header("📊 분석 설정")
+    target_column = st.sidebar.selectbox("딱 하나의 항목만 선택하세요", df.columns)
 
     if target_column:
-        counts = df[target_column].value_counts().sort_index()
+        # 데이터가 너무 많으면 상위 15개만 추출 (지저분함 방지)
+        counts = df[target_column].value_counts()
+        if len(counts) > 15:
+            st.warning(f"⚠️ 항목이 너무 많아 상위 15개만 표시합니다. (전체 {len(counts)}개)")
+            counts = counts.head(15)
 
-        # 1. 막대 그래프
-        st.write(f"### 📈 {target_column} 항목별 막대 그래프")
-        fig_bar, ax_bar = plt.subplots()
-        counts.plot(kind='bar', ax=ax_bar, color='skyblue', edgecolor='black')
-        plt.xticks(rotation=45)
-        st.pyplot(fig_bar)
+        col1, col2 = st.columns(2)
 
-        # 2. 파이 차트
-        st.write(f"### 🍕 {target_column} 항목별 비율")
-        fig_pie, ax_pie = plt.subplots()
-        counts.plot(kind='pie', ax=ax_pie, autopct='%1.1f%%', startangle=90)
-        ax_pie.set_ylabel("")
-        st.pyplot(fig_pie)
+        with col1:
+            st.write(f"### 📈 {target_column} TOP 15")
+            fig_bar, ax_bar = plt.subplots(figsize=(10, 6))
+            counts.plot(kind='bar', ax=ax_bar, color='#4A90E2', edgecolor='white')
+            plt.xticks(rotation=45, ha='right') # 글자를 대각선으로 눕혀서 안 겹치게!
+            st.pyplot(fig_bar)
 
-        # 3. 꺾은선 그래프 (신규 추가!)
-        st.write(f"### 📉 {target_column} 변화 추이 (꺾은선 그래프)")
-        fig_line, ax_line = plt.subplots()
-        counts.plot(kind='line', ax=ax_line, marker='o', color='green', linewidth=2)
-        ax_line.grid(True, linestyle='--', alpha=0.7)
-        plt.xticks(rotation=45)
+        with col2:
+            st.write(f"### 🍕 {target_column} 비율")
+            fig_pie, ax_pie = plt.subplots(figsize=(10, 6))
+            counts.plot(kind='pie', ax=ax_pie, autopct='%1.1f%%', startangle=90, colors=plt.cm.Paired.colors)
+            ax_pie.set_ylabel("")
+            st.pyplot(fig_pie)
+
+        # 3. 꺾은선 그래프
+        st.write(f"### 📉 {target_column} 변화 추이")
+        fig_line, ax_line = plt.subplots(figsize=(12, 4))
+        counts.sort_index().plot(kind='line', ax=ax_line, marker='o', color='#F5A623', linewidth=3)
+        ax_line.grid(True, linestyle=':', alpha=0.6)
+        plt.xticks(rotation=45, ha='right')
         st.pyplot(fig_line)
-
-        st.success("✅ 모든 그래프가 생성되었습니다! 이제 변화 추이도 확인해보세요.")
